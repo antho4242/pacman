@@ -1,18 +1,28 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Score
+// Score et état du jeu
 let score = 0;
+let gameOver = false;
 
 // Pac-Man
 let pacman = {
-    x: 200,
-    y: 200,
+    x: 50,
+    y: 50,
     size: 15,
     speed: 3,
     dx: 0,
     dy: 0,
     mouthOpen: 0
+};
+
+// Fantôme
+let ghost = {
+    x: 350,
+    y: 350,
+    size: 15,
+    speed: 2,
+    color: '#ff0000'
 };
 
 // Pastilles (pellets)
@@ -46,6 +56,103 @@ function drawPellets() {
     });
 }
 
+// Dessiner le fantôme
+function drawGhost() {
+    // Corps du fantôme
+    ctx.fillStyle = ghost.color;
+    ctx.beginPath();
+    ctx.arc(ghost.x, ghost.y - 5, ghost.size, Math.PI, 0);
+    ctx.lineTo(ghost.x + ghost.size, ghost.y + ghost.size);
+    ctx.lineTo(ghost.x + ghost.size * 0.75, ghost.y + ghost.size - 5);
+    ctx.lineTo(ghost.x + ghost.size * 0.5, ghost.y + ghost.size);
+    ctx.lineTo(ghost.x + ghost.size * 0.25, ghost.y + ghost.size - 5);
+    ctx.lineTo(ghost.x, ghost.y + ghost.size);
+    ctx.lineTo(ghost.x - ghost.size, ghost.y + ghost.size);
+    ctx.lineTo(ghost.x - ghost.size * 0.75, ghost.y + ghost.size - 5);
+    ctx.lineTo(ghost.x - ghost.size * 0.5, ghost.y + ghost.size);
+    ctx.lineTo(ghost.x - ghost.size * 0.25, ghost.y + ghost.size - 5);
+    ctx.lineTo(ghost.x - ghost.size, ghost.y + ghost.size);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Yeux blancs
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ghost.x - 5, ghost.y - 3, 4, 0, 2 * Math.PI);
+    ctx.arc(ghost.x + 5, ghost.y - 3, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Pupilles
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(ghost.x - 5, ghost.y - 3, 2, 0, 2 * Math.PI);
+    ctx.arc(ghost.x + 5, ghost.y - 3, 2, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
+// Déplacer le fantôme vers Pac-Man (IA simple)
+function updateGhost() {
+    if (gameOver) return;
+    
+    const dx = pacman.x - ghost.x;
+    const dy = pacman.y - ghost.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance > 0) {
+        ghost.x += (dx / distance) * ghost.speed;
+        ghost.y += (dy / distance) * ghost.speed;
+    }
+    
+    // Vérifier collision avec Pac-Man
+    checkGhostCollision();
+}
+
+// Vérifier collision avec le fantôme
+function checkGhostCollision() {
+    const dx = pacman.x - ghost.x;
+    const dy = pacman.y - ghost.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < pacman.size + ghost.size) {
+        gameOver = true;
+        showGameOver();
+    }
+}
+
+// Afficher Game Over
+function showGameOver() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 20);
+    
+    ctx.font = '24px Arial';
+    ctx.fillText(`Score final: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
+    
+    ctx.font = '16px Arial';
+    ctx.fillText('Appuyez sur R pour recommencer', canvas.width / 2, canvas.height / 2 + 60);
+}
+
+// Redémarrer le jeu
+function restartGame() {
+    gameOver = false;
+    score = 0;
+    updateScore();
+    
+    pacman.x = 50;
+    pacman.y = 50;
+    pacman.dx = 0;
+    pacman.dy = 0;
+    
+    ghost.x = 350;
+    ghost.y = 350;
+    
+    createPellets();
+}
+
 // Vérifier si Pac-Man mange une pastille
 function checkPelletCollision() {
     pellets.forEach(pellet => {
@@ -58,9 +165,33 @@ function checkPelletCollision() {
                 pellet.eaten = true;
                 score += 10;
                 updateScore();
+                
+                // Vérifier si toutes les pastilles sont mangées
+                const allEaten = pellets.every(p => p.eaten);
+                if (allEaten) {
+                    gameOver = true;
+                    showVictory();
+                }
             }
         }
     });
+}
+
+// Afficher la victoire
+function showVictory() {
+    ctx.fillStyle = 'rgba(0, 100, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('VICTOIRE !', canvas.width / 2, canvas.height / 2 - 20);
+    
+    ctx.font = '24px Arial';
+    ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
+    
+    ctx.font = '16px Arial';
+    ctx.fillText('Appuyez sur R pour recommencer', canvas.width / 2, canvas.height / 2 + 60);
 }
 
 // Mettre à jour le score
@@ -105,6 +236,8 @@ function drawPacman() {
 
 // Mettre à jour la position
 function update() {
+    if (gameOver) return;
+    
     pacman.x += pacman.dx;
     pacman.y += pacman.dy;
     
@@ -118,19 +251,36 @@ function update() {
     
     // Vérifier collision avec pastilles
     checkPelletCollision();
+    
+    // Mettre à jour le fantôme
+    updateGhost();
 }
 
 // Boucle de jeu
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawPellets();
-    update();
+    drawGhost();
     drawPacman();
+    
+    if (!gameOver) {
+        update();
+    }
+    
     requestAnimationFrame(gameLoop);
 }
 
 // Contrôles clavier
 document.addEventListener('keydown', (e) => {
+    if (e.key === 'r' || e.key === 'R') {
+        if (gameOver) {
+            restartGame();
+        }
+        return;
+    }
+    
+    if (gameOver) return;
+    
     if (e.key === 'ArrowUp') {
         pacman.dx = 0;
         pacman.dy = -pacman.speed;
