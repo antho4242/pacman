@@ -95,36 +95,27 @@ const canvas = document.getElementById('gameCanvas');
    }
  
    // Contrôles clavier
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp') {
+        pacman.dx = 0;
+        pacman.dy = -pacman.speed;
+    } else if (e.key === 'ArrowDown') {
+        pacman.dx = 0;
+        pacman.dy = pacman.speed;
+    } else if (e.key === 'ArrowLeft') {
+        pacman.dx = -pacman.speed;
+        pacman.dy = 0;
+    } else if (e.key === 'ArrowRight') {
+        pacman.dx = pacman.speed;
+        pacman.dy = 0;
+    } else if (e.key === ' ') {
+        // Barre d'espace pour arrêter
+        pacman.dx = 0;
+        pacman.dy = 0;
+    }
+});
 
-   document.addEventListener('keydown', (e) => {
 
-       if (e.key === 'ArrowUp') {
-
-           pacman.dx = 0;
-
-           pacman.dy = -pacman.speed;
-
-       } else if (e.key === 'ArrowDown') {
-
-           pacman.dx = 0;
-
-           pacman.dy = pacman.speed;
-
-       } else if (e.key === 'ArrowLeft') {
-
-           pacman.dx = -pacman.speed;
-
-           pacman.dy = 0;
-
-       } else if (e.key === 'ArrowRight') {
-
-           pacman.dx = pacman.speed;
-
-           pacman.dy = 0;
-
-       }
-
-   });
  
    // Démarrer le jeu
 
